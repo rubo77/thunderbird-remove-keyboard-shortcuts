@@ -535,6 +535,9 @@ qquotekiosk.py:
     as large as possible to fit in the window, changing the quote
     every so often, using qpreso.py for the display window.
     Uses qpreso.py for the HTML display window.
+    
+thunderbird-patch:
+    Remove keyboard shortcuts from Thunderbird.
 
 urldownloader.py:
     Maintain a queue of URLs to download asynchronously to local files.
