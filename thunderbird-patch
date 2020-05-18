@@ -16,8 +16,8 @@
 # The tricky part is that sometimes updates break Thunderbird and you need to repatch it.
 #
 # WARNING: Sometimes re-patching is needed when Thunderbird updates itself and changes omni.ja
-#  Re-patching already patched version does not work!  The changes are already there.  
-# You need to download new version of Thunderbird, re-patch the omni.ja again!
+#   Re-patching already patched version does not work!  The changes are already there.  
+#   You need to download new version of Thunderbird, re-patch the omni.ja again!
 
 
 THUNDERBIRDDIR=$1
