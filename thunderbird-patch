@@ -1,0 +1,80 @@
+#!/bin/sh
+
+# Author: Patrik Svestka
+# Licence: MIT
+
+# Note: Inspired by Akkana's kitfox patch - "kitfox: make a customized Firefox."
+
+# Unpack thunderbirds/omni.ja, apply patches and then pack it back.
+
+# Either run this from the downloaded and unpacked Thunderbird directory,
+# or pass the path to that directory as the first argument.
+
+# On a system where thunderbird is installed as a package, pass it the
+# location of the thunderbird files, e.g. /usr/lib64/thunderbird on Opensuse.
+
+# The tricky part is that sometimes updates break Thunderbird and you need to repatch it.
+#
+# WARNING: Sometimes re-patching is needed when Thunderbird updates itself and changes omni.ja
+#  Re-patching already patched version does not work!  The changes are already there.  
+# You need to download new version of Thunderbird, re-patch the omni.ja again!
+
+
+THUNDERBIRDDIR=$1
+if [ x"$THUNDERBIRDDIR" = "x" ]; then
+  echo "Pass location of thunderbird files, e.g. /usr/lib64/thunderbird or /usr/lib/thunderbird"
+  exit 1
+else
+  # In zsh, $THUNDERBIRDDIR:A would do this.
+  THUNDERBIRDDIR=$(realpath $THUNDERBIRDDIR)
+fi
+
+if [ ! -d "$THUNDERBIRDDIR" ]; then
+  echo 'Usage: thunderbird-patch [THUNDERBIRDDIR]'
+  exit 1
+fi
+
+echo Thunderbird dir is: $THUNDERBIRDDIR
+
+realomnipath=$THUNDERBIRDDIR/omni.ja
+
+OMNITMPDIR=/tmp/omni
+
+# if needed BACKUP_OMNI=$THUNDERBIRDDIR/mailer-omni-backup.ja
+BACKUP_OMNI=$HOME/mailer-omni-backup-$(date +%Y-%m-%d).ja
+
+echo "Making directory $OMNITMPDIR ..."
+mkdir $OMNITMPDIR
+cd $OMNITMPDIR
+
+echo "Unzipping in $OMNITMPDIR ..."
+unzip -q $realomnipath
+
+echo "Making changes ..."
+
+########################################
+# PUT YOUR DESIRED CHANGE HERE.
+
+sed -i -e '#/^\s*<!ENTITY [^\.]*Cmd\.key "/{  s:^\s*:<!-- :; s:$: -->: ;}' \
+    -i -e '/^\s*<key id="key_[^"]*" key="&[^\.]*Cmd\.key;"[^/]*\/[^>]*>$/ { s:^\s*:<!-- :; s:$: -->: ; };' \
+    -i -e ':a /^\s*<key id="key_[^"]*" key="&[^\.]*Cmd\.key.*;"$/ { N; s:\n: :; s:^\s*:<!-- :; s:$: -->: ;ta; };' \
+chrome/en-US/locale/en-US/messenger/messengercompose/messengercompose.dtd \
+chrome/messenger/content/messenger/messageWindow.xul \
+chrome/en-US/locale/en-US/messenger/messenger.dtd \
+chrome/messenger/content/messenger/messenger.xul
+
+# End of patches
+########################################
+
+echo "Repackaging ..."
+
+# repackage omni.ja: - if startup is slow remove the 9 compression and replace it with 0
+zip -qr9XD /tmp/newomni.ja *
+
+echo "Backing up original to $BACKUP_OMNI"
+cp $THUNDERBIRDDIR/omni.ja $BACKUP_OMNI
+
+echo "Trying to copy /tmp/newomni.ja to $realomnipath"
+echo "If this doesn't work, try sudo cp /tmp/newomni.ja $realomnipath"
+echo
+cp /tmp/newomni.ja $realomnipath && echo "Copied new omni.ja into $realomnipath"
