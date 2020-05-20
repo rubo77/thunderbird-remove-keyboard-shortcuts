@@ -47,7 +47,7 @@ echo "Making directory $OMNITMPDIR ..."
 mkdir $OMNITMPDIR
 cd $OMNITMPDIR
 
-echo "Unzipping in $OMNITMPDIR ..."
+echo "Unzipping in $OMNITMPDIR ..."https://github.com/tukanos/scripts.git
 unzip -q $realomnipath
 
 echo "Making changes ..."
@@ -55,6 +55,7 @@ echo "Making changes ..."
 ########################################
 # PUT YOUR DESIRED CHANGE HERE.
 
+# remove most of the annoying thunderbird keyboard shortcuts
 sed -i -e '#/^\s*<!ENTITY [^\.]*Cmd\.key "/{  s:^\s*:<!-- :; s:$: -->: ;}' \
     -i -e '/^\s*<key id="key_[^"]*" key="&[^\.]*Cmd\.key;"[^/]*\/[^>]*>$/ { s:^\s*:<!-- :; s:$: -->: ; };' \
     -i -e ':a /^\s*<key id="key_[^"]*" key="&[^\.]*Cmd\.key.*;"$/ { N; s:\n: :; s:^\s*:<!-- :; s:$: -->: ;ta; };' \
@@ -62,6 +63,12 @@ chrome/en-US/locale/en-US/messenger/messengercompose/messengercompose.dtd \
 chrome/messenger/content/messenger/messageWindow.xul \
 chrome/en-US/locale/en-US/messenger/messenger.dtd \
 chrome/messenger/content/messenger/messenger.xul
+
+# remove next annoying thunderbird shortcuts - ctrl+enter (send now) and ctrl+shift+enter (send later)
+sed -i -e '/^\s*<!ENTITY [^\.]*Cmd\.keycode "/{  s:^\s*:<!-- :; s:$: -->: ;}' \
+    -i -e '/^\s*<key id="key_send[^"]*" keycode="&[^\.]*Cmd\.keycode;"[^/]*\/[^>]*>$/ { s:^\s*:<!-- :; s:$: -->: ; };' \
+chrome/en-US/locale/en-US/messenger/messengercompose/messengercompose.dtd \
+chrome/messenger/content/messenger/messengercompose/messengercompose.xul
 
 # End of patches
 ########################################
