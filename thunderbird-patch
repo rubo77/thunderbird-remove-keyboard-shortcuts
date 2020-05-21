@@ -5,7 +5,8 @@
 
 # Note: Inspired by Akkana's kitfox patch - "kitfox: make a customized Firefox."
 
-# Unpack thunderbirds/omni.ja, apply patches and then pack it back.
+# Removes most of the original keyboard shortcuts from Thunderbird
+# Unpacks thunderbirds/omni.ja, apply patches and then packs it back.
 
 # Either run this from the downloaded and unpacked Thunderbird directory,
 # or pass the path to that directory as the first argument.
