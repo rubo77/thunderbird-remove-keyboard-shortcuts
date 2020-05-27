@@ -1,0 +1,137 @@
+#!/bin/sh
+
+# Author: Patrik Svestka
+# Licence: MIT
+
+# Note: Inspired by Akkana's kitfox patch - "kitfox: make a customized Firefox."
+
+# Unpack thunderbirds/omni.ja, apply patches and then pack it back.
+
+# Either run this from the downloaded and unpacked Thunderbird directory,
+# or pass the path to that directory as the first argument.
+
+# On a system where thunderbird is installed as a package, pass it the
+# location of the thunderbird files, e.g. /usr/lib64/thunderbird on Opensuse.
+
+# The tricky part is that sometimes updates break Thunderbird and you need to repatch it.
+#
+# WARNING: Sometimes re-patching is needed when Thunderbird updates itself and changes omni.ja
+#   Re-patching already patched version does not work!  The changes are already there.  
+#   You need to download new version of Thunderbird, re-patch the omni.ja again!
+
+
+THUNDERBIRDDIR=$1
+if [ x"$THUNDERBIRDDIR" = "x" ]; then
+  echo "Pass location of thunderbird files, e.g. /usr/lib64/thunderbird or /usr/lib/thunderbird"
+  exit 1
+else
+  # In zsh, $THUNDERBIRDDIR:A would do this.
+  THUNDERBIRDDIR=$(realpath $THUNDERBIRDDIR)
+fi
+
+if [ ! -d "$THUNDERBIRDDIR" ]; then
+  echo 'Usage: thunderbird-patch [THUNDERBIRDDIR]'
+  exit 1
+fi
+
+echo Thunderbird dir is: $THUNDERBIRDDIR
+
+realomnipath=$THUNDERBIRDDIR/omni.ja
+
+OMNITMPDIR=/tmp/omni
+
+# if needed BACKUP_OMNI=$THUNDERBIRDDIR/mailer-omni-backup.ja
+BACKUP_OMNI=$HOME/mailer-omni-backup-$(date +%Y-%m-%d).ja
+
+echo "Making directory $OMNITMPDIR ..."
+mkdir $OMNITMPDIR
+cd $OMNITMPDIR
+
+echo "Unzipping in $OMNITMPDIR ..."
+unzip -q $realomnipath
+
+echo "Making changes ..."
+
+########################################
+# PUT YOUR DESIRED CHANGE HERE.
+#
+# Using sed (GNU sed) 4.8
+# using -E (for portability) (equivalent to -r --regexp-extended)
+
+# Appends the widgets to the between defaultset's button-tag and qfb-show-filter-bar (to position them)
+# adding the moved widgets to a defaultset
+sed -E -i -e 's:(\s*defaultset="(\w+[-]?\w+,)+button-tag,)(([-]?\w+[-]?\w+[,]?)+">):\1separator,qfb-sticky,qfb-results-label,qfb-qs-textbox,qfb-attachment,\3:' \
+chrome/messenger/content/messenger/messenger.xul \
+chrome/messenger/content/messenger/messageWindow.xul
+
+# using : for easier reading - first match is the tag without > and second is only >
+# hiding the whole box
+sed -E -i -e 's:(\s*<\w+\s\w+="quick-filter-bar")(>):\1 hidden="true"\2:' chrome/messenger/content/messenger/messenger.xul
+
+# adding \ for the needed whitespace adding a whitespace in bath press meta (alt) <int> <space> and you will get <int> spaces
+# hiding the widget
+sed -E -i -e '/^\s*crop="\w+"\s\w+="16"/i\                         hidden="true"'  chrome/messenger/content/messenger/messenger.xul
+
+# adding \ for the needed whitespace (separated due to slightly different spacing)
+# hiding the widget
+sed -E -i -e '/id="qfb-results-label"/a\               hidden="true"' chrome/messenger/content/messenger/messenger.xul
+sed -E -i -e '/id="qfb-qs-textbox"/a\                 hidden="true"' chrome/messenger/content/messenger/messenger.xul
+
+# Moving the toolbar widgets to correct place
+sed -E -i -e '/^\s+<\w+\s\w+="qfb-show-filter-bar"/i \
+    <toolbarbutton id="qfb-sticky" type="checkbox"\
+                   class="toolbarbutton-1" orient="horizontal"\
+                   crop="none" minwidth="16"\
+                   tooltiptext="&quickFilterBar.sticky.tooltip;"/>\
+    <label id="qfb-results-label"\
+           minwidth="&quickFilterBar.resultsLabel.minWidth;"\
+           value=""\
+           somefmtstring="&quickFilterBar.resultsLabel.some.formatString;"\
+           noresultsstring="&quickFilterBar.resultsLabel.none;"/>\
+    <textbox is="search-textbox" id="qfb-qs-textbox"\
+             align="center"\
+             flex="3"\
+             class="searchBox"\
+             placeholder=""\
+             emptytextbase="&quickFilterBar.textbox.emptyText.base1;"\
+             keyLabelNonMac="&quickFilterBar.textbox.emptyText.keyLabel2.nonmac;"\
+             keyLabelMac="&quickFilterBar.textbox.emptyText.keyLabel2.mac;"\
+             timeout="500"\
+             maxlength="100"\
+             width="170"\
+             minwidth="160">\
+    </textbox>\
+    <toolbarbutton id="qfb-attachment" type="checkbox"\
+                   class="toolbarbutton-1" orient="horizontal"\
+                   crop="none" minwidth="16"\
+                   label="&quickFilterBar.attachment.label;"\
+                   tooltiptext="&quickFilterBar.attachment.tooltip;"/>' chrome/messenger/content/messenger/messenger.xul
+
+# Changing the default gray color to yellow as the found/not found (green/red) functionality is unavailable
+sed -i -e 's/color: GrayText;/color: #fff200;/g' chrome/messenger/content/messenger/quickFilterBar.css
+
+# Adding icons 
+sed -i -e '/#qfb-show-filter-bar/i \
+#qfb-sticky {\
+  list-style-image: url("chrome:\\messenger\skin\icons\sticky.svg");\
+}\
+\
+#qfb-attachment {\
+  list-style-image: url("chrome:\\messenger\skin\icons\attach.svg");\
+}' chrome/classic/skin/classic/messenger/primaryToolbar.css
+
+# End of patches
+########################################
+
+echo "Repackaging ..."
+
+# repackage omni.ja: - if startup is slow remove the 9 compression and replace it with 0
+zip -qr9XD /tmp/newomni.ja *
+
+echo "Backing up original to $BACKUP_OMNI"
+cp $THUNDERBIRDDIR/omni.ja $BACKUP_OMNI
+
+echo "Trying to copy /tmp/newomni.ja to $realomnipath"
+echo "If this doesn't work, try sudo cp /tmp/newomni.ja $realomnipath"
+echo
+cp /tmp/newomni.ja $realomnipath && echo "Copied new omni.ja into $realomnipath"

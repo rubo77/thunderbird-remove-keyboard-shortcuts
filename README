@@ -538,6 +538,9 @@ qquotekiosk.py:
     
 thunderbird-patch:
     Remove keyboard shortcuts from Thunderbird.
+    
+thunderbird-widgets_move-patch:
+    Moving the Quick Filter toolbar items to the main toolbar to save space
 
 urldownloader.py:
     Maintain a queue of URLs to download asynchronously to local files.
