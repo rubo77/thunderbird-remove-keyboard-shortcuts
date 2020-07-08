@@ -37,12 +37,19 @@ fi
 
 echo Thunderbird dir is: $THUNDERBIRDDIR
 
+echo checking if $THUNDERBIRDDIR/thunderbird is running ...
+pgrep thunderbird -la|grep $THUNDERBIRDDIR/thunderbird;
+if [ $? -eq 0 ]; then
+  echo 'thunderbird is still running!'
+  exit 1
+fi
+
 realomnipath=$THUNDERBIRDDIR/omni.ja
-
 OMNITMPDIR=/tmp/omni
+BACKUP_OMNI=thunderbird-omni.ja.backup-$(date +%Y-%m-%d_%H:%m:%S).ja
 
-# if needed BACKUP_OMNI=$THUNDERBIRDDIR/mailer-omni-backup.ja
-BACKUP_OMNI=$HOME/mailer-omni-backup-$(date +%Y-%m-%d).ja
+U=${SUDO_USER:-$USER}
+HOMEDIR=/home/$U
 
 echo "Making directory $OMNITMPDIR ..."
 mkdir $OMNITMPDIR
@@ -50,6 +57,9 @@ cd $OMNITMPDIR
 
 echo "Unzipping in $OMNITMPDIR ..."https://github.com/tukanos/scripts.git
 unzip -q $realomnipath
+
+echo "creating a backup ${OMNITMPDIR}-bak/ before making changes ..."
+cp -a $OMNITMPDIR ${OMNITMPDIR}-bak
 
 echo "Making changes ..."
 
@@ -65,11 +75,11 @@ chrome/messenger/content/messenger/messageWindow.xul \
 chrome/en-US/locale/en-US/messenger/messenger.dtd \
 chrome/messenger/content/messenger/messenger.xul
 
-# remove next annoying thunderbird shortcuts - ctrl+enter (send now) and ctrl+shift+enter (send later)
-sed -i -e '/^\s*<!ENTITY [^\.]*Cmd\.keycode "/{  s:^\s*:<!-- :; s:$: -->: ;}' \
-    -i -e '/^\s*<key id="key_send[^"]*" keycode="&[^\.]*Cmd\.keycode;"[^/]*\/[^>]*>$/ { s:^\s*:<!-- :; s:$: -->: ; };' \
-chrome/en-US/locale/en-US/messenger/messengercompose/messengercompose.dtd \
-chrome/messenger/content/messenger/messengercompose/messengercompose.xul
+# uncmment to remove next annoying thunderbird shortcuts - ctrl+enter (send now) and ctrl+shift+enter (send later)
+# sed -i -e '/^\s*<!ENTITY [^\.]*Cmd\.keycode "/{  s:^\s*:<!-- :; s:$: -->: ;}' \
+#     -i -e '/^\s*<key id="key_send[^"]*" keycode="&[^\.]*Cmd\.keycode;"[^/]*\/[^>]*>$/ { s:^\s*:<!-- :; s:$: -->: ; };' \
+# chrome/en-US/locale/en-US/messenger/messengercompose/messengercompose.dtd \
+# chrome/messenger/content/messenger/messengercompose/messengercompose.xul
 
 # End of patches
 ########################################
@@ -78,11 +88,13 @@ echo "Repackaging ..."
 
 # repackage omni.ja: - if startup is slow remove the 9 compression and replace it with 0
 zip -qr9XD /tmp/newomni.ja *
-
-echo "Backing up original to $BACKUP_OMNI"
-cp $THUNDERBIRDDIR/omni.ja $BACKUP_OMNI
+echo "Backing up original $THUNDERBIRDDIR/omni.ja to $THUNDERBIRDDIR/omni.ja.backup and $HOMEDIR/$BACKUP_OMNI"
+cp -v $THUNDERBIRDDIR/omni.ja $HOMEDIR/$BACKUP_OMNI
+cp -v $THUNDERBIRDDIR/omni.ja $THUNDERBIRDDIR/$BACKUP_OMNI
 
 echo "Trying to copy /tmp/newomni.ja to $realomnipath"
 echo "If this doesn't work, try sudo cp /tmp/newomni.ja $realomnipath"
 echo
-cp /tmp/newomni.ja $realomnipath && echo "Copied new omni.ja into $realomnipath"
+cp -iv /tmp/newomni.ja $realomnipath
+
+echo 'done!'
